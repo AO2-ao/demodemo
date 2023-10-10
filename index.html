@@ -3,13 +3,14 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity WebGL Player | VideoTest</title>
+    <title>Unity WebGL Player | NABASE</title>
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
+    <script src="//cdn.webrtc.ecl.ntt.com/skyway-4.4.5.js"></script>
   </head>
   <body>
     <div id="unity-container" class="unity-desktop">
-      <canvas id="unity-canvas" width=960 height=600 tabindex="-1"></canvas>
+      <canvas id="unity-canvas" width=1920 height=1080 tabindex="-1"></canvas>
       <div id="unity-loading-bar">
         <div id="unity-logo"></div>
         <div id="unity-progress-bar-empty">
@@ -20,9 +21,16 @@
       <div id="unity-footer">
         <div id="unity-webgl-logo"></div>
         <div id="unity-fullscreen-button"></div>
-        <div id="unity-build-title">VideoTest</div>
+        <div id="unity-build-title">NABASE</div>
       </div>
     </div>
+    <!--試しに追加してみる、videoタグが追加される-->>
+    <!--<div id="js-remote-streams"></div>-->
+    <!--右下の映像出力-->
+    <video id="js-video-stream"></video>
+    <!--ここにどんどんAudioを追加していく-->
+    <div id="js-audio-stream"></div>
+    
     <script>
 
       var container = document.querySelector("#unity-container");
@@ -57,14 +65,14 @@
       }
 
       var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/DemoBuild.loader.js";
+      var loaderUrl = buildUrl + "/DemoDemo.loader.js";
       var config = {
-        dataUrl: buildUrl + "/DemoBuild.data",
-        frameworkUrl: buildUrl + "/DemoBuild.framework.js",
-        codeUrl: buildUrl + "/DemoBuild.wasm",
+        dataUrl: buildUrl + "/DemoDemo.data",
+        frameworkUrl: buildUrl + "/DemoDemo.framework.js",
+        codeUrl: buildUrl + "/DemoDemo.wasm",
         streamingAssetsUrl: "StreamingAssets",
-        companyName: "DefaultCompany",
-        productName: "VideoTest",
+        companyName: "TSUYAMA-KOSEN",
+        productName: "NABASE",
         productVersion: "0.1",
         showBanner: unityShowBanner,
       };
@@ -94,18 +102,20 @@
       } else {
         // Desktop style: Render the game canvas in a window that can be maximized to fullscreen:
 
-        canvas.style.width = "960px";
-        canvas.style.height = "600px";
+        canvas.style.width = "1920px";
+        canvas.style.height = "1080px";
       }
 
       loadingBar.style.display = "block";
 
       var script = document.createElement("script");
       script.src = loaderUrl;
+      var myGameInstance = null;
       script.onload = () => {
         createUnityInstance(canvas, config, (progress) => {
           progressBarFull.style.width = 100 * progress + "%";
               }).then((unityInstance) => {
+                myGameInstance = unityInstance;
                 loadingBar.style.display = "none";
                 fullscreenButton.onclick = () => {
                   unityInstance.SetFullscreen(1);
@@ -118,5 +128,6 @@
       document.body.appendChild(script);
 
     </script>
+    <script src="TemplateData/Nabase.js"></script>
   </body>
 </html>
