@@ -16,6 +16,8 @@ window.onload = async function() {
     await initializePeer();
     await accsecVideoMicrophone();
     await storeDevicesInfo();
+    createAudioContext();
+    generateLisner();
 };
 //peer作成
 let peer;
@@ -42,15 +44,38 @@ async function initializePeer() {
 let room;
 function joinRoomHoge(){
     room=peer.joinRoom("hoge",{mode: 'sfu',stream: localStream});
+    room.on("open", () => {
+      room.members.forEach(peerid => {
+        if(peerid!=peer.id){
+          myGameInstance.SendMessage('JSHandle','InitIconOther',peerid);
+        }
+      });
+    });
     room.on("peerJoin", (peerId) => {
       myGameInstance.SendMessage('JSHandle','InitIconOther',peerId);
       });
-      room.on("stream", (stream) => {
-        const id=stream.peerid;
-        storePeerStream(stream,id);
-        ReplaceVideoTrack(id);
-        addAudioElement(id);
+    room.on("stream", (stream) => {
+      const id=stream.peerId;
+      storePeerStream(stream,id);
+      addAudioTrackasPannertoContext(stream,id);
+    });
+    room.on("data", ({ src, data }) => {
+      const obj = JSON.parse(data);
+      if(obj.image[0]==0){
+        const positon =JSON.stringify({ x: obj.x, y: obj.y,id: src});
+        myGameInstance.SendMessage('JSHandle','MoveOtherIcon',positon); 
+      }else{
+
+      }
       });
+}
+//ポジションを送信
+function sendPosition(data){
+  room.send(data);
+}
+//テクスチャを送信
+function sendTexture(data){
+  room.send(data);
 }
 
 //カメラとマイクにアクセス
@@ -66,6 +91,7 @@ async function accsecVideoMicrophone(){
         localStream=stream;
         remoteVideo.srcObject=localStream;
         remoteVideo.playsInline=true;
+        remoteVideo.muted=true;
         remoteVideo.play().catch(console.error);
         VideoHide();
       })
@@ -111,24 +137,36 @@ async function storeDevicesInfo(){
 const videoTrackMap={};
 const audioTrackMap={};
 function storePeerStream(stream,id){
-      console.log(id);
+      console.log("Nabase: storePeerStreamの実行\n id "+id);
       videoTrackMap[id]=stream.getVideoTracks()[0];
       audioTrackMap[id]=stream.getAudioTracks()[0];
 }
 //video要素に対する処理
 //ビデオ切り替え
 async function ReplaceVideoTrack(id){
+  console.log("Nabase: js側でreplace 関数の実行開始\nid "+id);
   const newVideoTrack= videoTrackMap[id];
+  console.log("Nabase: newvideotrackの取得");
       const newStream=new MediaStream();
       if(newVideoTrack){
         newStream.addTrack(newVideoTrack);
+        console.log("Nabase: addTrack");
       }else{
         console.log("ビデオトラックが見つかりません");
       }
     const remoteVideo = document.getElementById('js-video-stream');
+    console.log("Nabase: remoteViceoの取得");
       remoteVideo.srcObject = newStream;
+    console.log("Nabase: remoteVideo srcObjectの変更");
       remoteVideo.playsInline = true;
-      await remoteVideo.play().catch(console.error);
+      console.log("Nabase: remoteVideo playsInlineの変更");
+      try {
+        await remoteVideo.play();
+        VideoVisible();
+        console.log("再生成功");
+    } catch (error) {
+        console.error("再生エラー: ", error);
+    }
 }
 
 //非表示
@@ -143,8 +181,8 @@ function VideoVisible(){
 }
 //audio要素に対する処理
 //audio要素を追加する
-async function addAudioElement(id){
-  console.log("add audio element!");
+/*async function addAudioElement(id){
+  console.log("Nabase: addAudioElement の実行\n id "+id);
   const remoteAudio=document.getElementById("js-audio-stream");
   const newAudio = document.createElement('audio');
   const addAudioTrack=audioTrackMap[id];
@@ -157,4 +195,65 @@ async function addAudioElement(id){
   newAudio.srcObject=addAudioStream;
   remoteAudio.append(newAudio);
   await newAudio.play().catch(console.error);
+}*/
+
+//立体音響関係
+//コンテキスト作成
+let audioContext
+function createAudioContext(){
+  audioContext=new AudioContext();
 }
+//コンテキストの追加と連想配列への追加
+const SoucePannerMap={};
+function addAudioTrackasPannertoContext(stream,id){
+  console.log(("Nabase: addAudioTrackasPannertoContextの実行\n id "+ id));
+  //const track=audioTrackMap[id];
+  /*const panner = audioContext.createPanner();
+  panner.panningModel = 'HRTF';
+  panner.distanceModel = 'linear';
+  panner.refDistance = 1.0; // 減衰が始まる距離
+  panner.maxDistance = 1000.0; // 最大減衰距離*/
+
+  //const newStream = new MediaStream(); // must be an array
+  //newStream.addTrack(track);
+  const sourceNode = audioContext.createMediaStreamSource(stream);
+  //sourceNode.connect(panner);
+  //panner.connect(audioContext.destination);
+  sourceNode.connect(audioContext.destination);
+  //console.log("Nabase: panner.context.destination\n"+panner.context.destination);
+  // 連想配列にPannerNodeとAudioTrackを保存
+ /* SoucePannerMap[id] = {
+    panner: panner,
+    sourceNode: sourceNode
+}*/
+  //console.log("Nabase: SoucePannerMap[id].panner.context.destination\n"+SoucePannerMap[id].panner.context.destination);
+}
+function updatePannerNode(id, x, y) {
+  if(SoucePannerMap[id]!=undefined&&SoucePannerMap[id]!=null){
+    SoucePannerMap[id].panner.positionX.setValueAtTime(x, audioContext.currentTime);
+    SoucePannerMap[id].panner.positionY.setValueAtTime(y, audioContext.currentTime);
+    SoucePannerMap[id].panner.positionZ.setValueAtTime(0, audioContext.currentTime);
+  }else{
+    console.log("Nabase: pannerが見つかりません");
+  }
+}
+let Listener
+function generateLisner(){
+  Listener = audioContext.listener;
+  console.log("Nabse: generateListenerの実行");
+console.log("listener != undefined: " + (Listener != undefined));
+console.log("listener != null: " + (Listener != null));
+}
+function updateLisnerNode(pos_x,pos_y,ang_x,ang_y){
+  if(Listener!=null&&Listener!=undefined){
+  Listener.positionX.setValueAtTime(pos_x, audioContext.currentTime);
+  Listener.positionY.setValueAtTime(pos_y, audioContext.currentTime);
+  Listener.positionZ.setValueAtTime(0, audioContext.currentTime);
+  Listener.forwardX.setValueAtTime(ang_x, audioContext.currentTime);
+  Listener.forwardY.setValueAtTime(ang_y, audioContext.currentTime);
+  Listener.forwardZ.setValueAtTime(0, audioContext.currentTime);
+  }else{
+    console.log("Nabase: listenerが見つからない");
+  }
+}
+//リスナーを削除したりpannerを削除するのが必要
