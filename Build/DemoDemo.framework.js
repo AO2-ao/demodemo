@@ -1975,13 +1975,13 @@ var tempI64;
 // === Body ===
 
 var ASM_CONSTS = {
-  3122452: function() {Module['emscripten_get_now_backup'] = performance.now;},  
- 3122507: function($0) {performance.now = function() { return $0; };},  
- 3122555: function($0) {performance.now = function() { return $0; };},  
- 3122603: function() {performance.now = Module['emscripten_get_now_backup'];},  
- 3122658: function() {return Module.webglContextAttributes.premultipliedAlpha;},  
- 3122719: function() {return Module.webglContextAttributes.preserveDrawingBuffer;},  
- 3122783: function() {return Module.webglContextAttributes.powerPreference;}
+  3124116: function() {Module['emscripten_get_now_backup'] = performance.now;},  
+ 3124171: function($0) {performance.now = function() { return $0; };},  
+ 3124219: function($0) {performance.now = function() { return $0; };},  
+ 3124267: function() {performance.now = Module['emscripten_get_now_backup'];},  
+ 3124322: function() {return Module.webglContextAttributes.premultipliedAlpha;},  
+ 3124383: function() {return Module.webglContextAttributes.preserveDrawingBuffer;},  
+ 3124447: function() {return Module.webglContextAttributes.powerPreference;}
 };
 
 
@@ -5071,8 +5071,15 @@ var ASM_CONSTS = {
         sendPosition(strData);
       }
 
-  function _JSupdateLisnerNode(pos_x,pos_y,ang_x,ang_y){
-        updateLisnerNode(pos_x,pos_y,ang_x,ang_y);
+  function _JSupdateLisnerNode(iconX,iconY,mouceX,mouceY){
+        const pos_x=iconX;
+        const pos_z=-iconY;
+  
+        const radians = Math.atan2(mouceY, mouceX);
+        const ang_z = -(Math.sin(radians));
+        const ang_x = Math.cos(radians);
+  
+        updateLisnerNode(pos_x,pos_z,ang_x,ang_z);
       }
 
   function _JSupdatePannerNode(id,x,y){
