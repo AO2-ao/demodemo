@@ -16,7 +16,7 @@ window.onload = async function() {
     await initializePeer();
     await accsecVideoMicrophone();
     await storeDevicesInfo();
-    createAudioContext();
+    //createAudioContext();
     
 };
 //peer作成
@@ -57,8 +57,8 @@ function joinRoomHoge(){
     room.on("stream", (stream) => {
       const id=stream.peerId;
       storePeerStream(stream,id);
-      //addAudioElement(id)
-      addAudioTrackasPannertoContext(id);
+      addAudioElement(id)
+      //addAudioTrackasPannertoContext(id);
     });
     room.on("data", ({ src, data }) => {
       const obj = JSON.parse(data);
@@ -118,11 +118,10 @@ async function storeDevicesInfo(){
           let bufferSize=lengthBytesUTF8(sendStr)+1;
           let buffer=_malloc(bufferSize);
           stringToUTF8(sendStr,buffer,bufferSize);*/
-
-          //unityInstance.SendMessage("JSHandle","",device.label);
+          myGameInstance.SendMessage("JSHandle","AddAudiolabel",device.label);
         }else if(kind=='videoinput'){
           myMediaDeviceInfoVideo[device.label]=device;
-          //unityInstance.SendMessage("JSHandle","",device.label);
+          myGameInstance.SendMessage("JSHandle","AddVideolabel",device.label);
         }
       });
     })
@@ -131,7 +130,36 @@ async function storeDevicesInfo(){
     });
 }
 
-
+async function replaceLocalStream(videoName,audioName){
+  const remoteVideo = document.getElementById('js-video-stream');
+  if(videoName!='Display'){
+    await navigator.mediaDevices
+    .getUserMedia({
+      audio: myMediaDeviceInfoAudio[audioName],
+      video: myMediaDeviceInfoVideo[videoName],
+    })
+    .then((stream) => {
+        localStream=stream;
+        remoteVideo.srcObject=localStream;
+        remoteVideo.playsInline=true;
+        remoteVideo.muted=true;
+        remoteVideo.play().catch(console.error);
+      })
+    .catch(console.error)
+  }else{
+    await navigator.mediaDevices.getDisplayMedia({
+      audio: false,
+      video: true,
+    }).then((stream) => {
+      localStream=stream;
+      remoteVideo.srcObject=localStream;
+      remoteVideo.playsInline=true;
+      remoteVideo.muted=true;
+      remoteVideo.play().catch(console.error);
+    })
+  .catch(console.error)
+  }
+}
 
 //video,auidioをpeerIdごとに管理
 //各peerのvideoを格納する連想配列
@@ -192,9 +220,11 @@ async function addAudioElement(id){
   remoteAudio.append(newAudio);
   await newAudio.play().catch(console.error);
 }
+
+
 //立体音響関係
 //※なぜかうまくいかない！
-async function TestaddAudioElement(stream){
+/*async function TestaddAudioElement(stream){
   //console.log("Nabase: addAudioElement の実行\n id ");
   const remoteAudio=document.getElementById("js-audio-stream");
   const newAudio = document.createElement('audio');
@@ -211,7 +241,7 @@ async function TestaddAudioElement(stream){
 //コンテキスト作成
 let audioContext
 let Listener
-function createAudioContext(){
+async function createAudioContext(){
   console.log("Nabase: createAudioCotext 呼び出された");
   audioContext=new AudioContext();
   Listener=audioContext.listener;
@@ -222,6 +252,10 @@ function createAudioContext(){
   Listener.forwardY.value=0;//変えない
   Listener.forwardZ.value=-1;//前向いてる
   console.log("Nabase: "+Listener);
+  const audioElement=document.getElementById('js-audio-stream');
+  const outputDeviceNode = new MediaStreamAudioDestinationNode(audioContext);
+  audioElement.srcObject = outputDeviceNode.stream;
+  await audioElement.play().catch(console.e);
 }
 //コンテキストの追加と連想配列への追加
 const PannerMap={};
@@ -270,5 +304,5 @@ function updateLisnerNode(pos_x,pos_z,ang_x,ang_z){
   }else{
     console.log("Nabase: listenerが見つからない");
   }
-}
+}*/
 //※リスナーを削除したりpannerを削除するのが必要

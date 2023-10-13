@@ -1975,13 +1975,13 @@ var tempI64;
 // === Body ===
 
 var ASM_CONSTS = {
-  3124116: function() {Module['emscripten_get_now_backup'] = performance.now;},  
- 3124171: function($0) {performance.now = function() { return $0; };},  
- 3124219: function($0) {performance.now = function() { return $0; };},  
- 3124267: function() {performance.now = Module['emscripten_get_now_backup'];},  
- 3124322: function() {return Module.webglContextAttributes.premultipliedAlpha;},  
- 3124383: function() {return Module.webglContextAttributes.preserveDrawingBuffer;},  
- 3124447: function() {return Module.webglContextAttributes.powerPreference;}
+  3124500: function() {Module['emscripten_get_now_backup'] = performance.now;},  
+ 3124555: function($0) {performance.now = function() { return $0; };},  
+ 3124603: function($0) {performance.now = function() { return $0; };},  
+ 3124651: function() {performance.now = Module['emscripten_get_now_backup'];},  
+ 3124706: function() {return Module.webglContextAttributes.premultipliedAlpha;},  
+ 3124767: function() {return Module.webglContextAttributes.preserveDrawingBuffer;},  
+ 3124831: function() {return Module.webglContextAttributes.powerPreference;}
 };
 
 
@@ -5058,6 +5058,12 @@ var ASM_CONSTS = {
 
   function _JSjoinRoomHoge(){
         joinRoomHoge();
+      }
+
+  async function _JSreplaceLocalStream(videoName,audioName){
+        const vLabel=UTF8ToString(videoName);
+        const aLabel=UTF8ToString(audioName);
+        replaceLocalStream(vLabel,aLabel);
       }
 
   async function _JSreplaceVideoTrack(id){
@@ -15735,6 +15741,7 @@ var asmLibraryArg = {
   "JS_WebRequest_SetRequestHeader": _JS_WebRequest_SetRequestHeader,
   "JS_WebRequest_SetTimeout": _JS_WebRequest_SetTimeout,
   "JSjoinRoomHoge": _JSjoinRoomHoge,
+  "JSreplaceLocalStream": _JSreplaceLocalStream,
   "JSreplaceVideoTrack": _JSreplaceVideoTrack,
   "JSsendPosition": _JSsendPosition,
   "JSupdateLisnerNode": _JSupdateLisnerNode,
