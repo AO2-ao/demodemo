@@ -281,8 +281,8 @@ function updatePannerNode(id, x, z) {
     PannerMap[id].positionX.setValueAtTime(x, AudioContext_nabe.currentTime);
     PannerMap[id].positionY.setValueAtTime(0, AudioContext_nabe.currentTime);
     PannerMap[id].positionZ.setValueAtTime(z, AudioContext_nabe.currentTime);
-    console.log("Nabase: x"+PannerMap[id].positionX);
-    console.log("Nabase: z"+PannerMap[id].positionZ);
+    console.log("Nabase: x"+PannerMap[id].positionX.value);
+    console.log("Nabase: z"+PannerMap[id].positionZ.value);
   }else{
     console.log("Nabase: pannerが見つかりません");
   }
@@ -296,13 +296,24 @@ function updateLisnerNode(pos_x,pos_z,ang_x,ang_z){
   Listener.forwardX.setValueAtTime(ang_x, AudioContext_nabe.currentTime);
   Listener.forwardY.setValueAtTime(0, AudioContext_nabe.currentTime);
   Listener.forwardZ.setValueAtTime(ang_z, AudioContext_nabe.currentTime);
-  console.log("Nabase: posx value:"+Listener.positionX);
-  console.log("Nabase: posz value:"+Listener.positionZ);
-  console.log("Nabase: angx value:"+Listener.forwardX);
-  console.log("Nabase: angz value:"+Listener.forwardZ);
+  console.log("Nabase: posx value:"+Listener.positionX.value);
+  console.log("Nabase: posz value:"+Listener.positionZ.value);
+  console.log("Nabase: angx value:"+Listener.forwardX.value);
+  console.log("Nabase: angz value:"+Listener.forwardZ.value);
   }else{
     console.log("Nabase: listenerが見つからない");
     console.log(Listener);
+  }
+}
+
+let isMuted=false;
+function switchMuted(){
+  if(!isMuted){
+    localStream.getAudioTracks().forEach((track) => (track.enabled = false));
+    isMuted=true;
+  }else{
+    localStream.getAudioTracks().forEach((track) => (track.enabled = true))
+    isMuted=false;
   }
 }
 //※リスナーを削除したりpannerを削除するのが必要
