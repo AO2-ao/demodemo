@@ -50,14 +50,16 @@ function joinRoomHoge(){
           myGameInstance.SendMessage('JSHandle','InitIconOther',peerid);
         }
       });
+      newContextAndListener();
     });
     room.on("peerJoin", (peerId) => {
       myGameInstance.SendMessage('JSHandle','InitIconOther',peerId);
       });
-    room.on("stream", (stream) => {
+    room.on("stream", async (stream) => {
       const id=stream.peerId;
       storePeerStream(stream,id);
-      addAudioElement(id)
+      await addAudioContext(stream,id);
+      //addAudioElement(id)
       //addAudioTrackasPannertoContext(id);
     });
     room.on("data", ({ src, data }) => {
@@ -223,86 +225,79 @@ async function addAudioElement(id){
 
 
 //立体音響関係
-//※なぜかうまくいかない！
-/*async function TestaddAudioElement(stream){
-  //console.log("Nabase: addAudioElement の実行\n id ");
-  const remoteAudio=document.getElementById("js-audio-stream");
-  const newAudio = document.createElement('audio');
-  const addAudioStream=stream
-  if(stream.getAudioTracks()[0]){
-    addAudioStream.addTrack(stream.getAudioTracks()[0]);
-  }else{
-    console.log("ビデオトラックが見つかりません");
-  }
-  newAudio.srcObject=addAudioStream;
-  remoteAudio.append(newAudio);
-  await newAudio.play().catch(console.error);
-}
-//コンテキスト作成
-let audioContext
-let Listener
-async function createAudioContext(){
-  console.log("Nabase: createAudioCotext 呼び出された");
-  audioContext=new AudioContext();
-  Listener=audioContext.listener;
-  Listener.upX.value=0;//変えない
-  Listener.upY.value=1;//変えない
-  Listener.upZ.value=0;//変えない
-  Listener.forwardX.value=0;
-  Listener.forwardY.value=0;//変えない
-  Listener.forwardZ.value=-1;//前向いてる
-  console.log("Nabase: "+Listener);
-  const audioElement=document.getElementById('js-audio-stream');
-  const outputDeviceNode = new MediaStreamAudioDestinationNode(audioContext);
-  audioElement.srcObject = outputDeviceNode.stream;
-  await audioElement.play().catch(console.e);
-}
-//コンテキストの追加と連想配列への追加
 const PannerMap={};
-function addAudioTrackasPannertoContext(id){
-  console.log(("Nabase: addAudioTrackasPannertoContextの実行\n id "+ id));
+let Listener;
+let AudioContext_nabe;
 
-    const panner = new PannerNode(audioContext,{
-      panningModel: "HRTF",
-      distanceModel: "linear",
-      refDistance: 1,
-      maxDistance: 100,
-      rolloffFactor: 1,
-      coneInnerAngle: 360,
-      coneOuterAngle: 0,
-      coneOuterGain: 0,
-    })
-    const track=audioTrackMap[id];
-    const newStream = new MediaStream(); // must be an array
-    if(track){
-      newStream.addTrack(track);
-    }else{
-      console.log("ビデオトラックが見つかりません");
-    }
-    const source = new MediaStreamAudioSourceNode(audioContext,{mediaStream: newStream,})
-    source.connect(panner).connect(audioContext.destination);
-    // 連想配列にPannerNodeとAudioTrackを保存
-    PannerMap[id]=panner;
+function newContextAndListener(){
+  console.log("Nabase: newContextAndListenerの呼び出し");
+  //新しいコンテキスト
+  AudioContext_nabe=new AudioContext();
+  //リスナー
+  Listener=AudioContext_nabe.listener;
+  Listener.upX.setValueAtTime(0, AudioContext_nabe.currentTime);
+  Listener.upY.setValueAtTime(1, AudioContext_nabe.currentTime);
+  Listener.upZ.setValueAtTime(0, AudioContext_nabe.currentTime);
+  Listener.forwardX.setValueAtTime(0, AudioContext_nabe.currentTime);
+  Listener.forwardY.setValueAtTime(0, AudioContext_nabe.currentTime);
+  Listener.forwardZ.setValueAtTime(-1, AudioContext_nabe.currentTime);
 }
+
+async function addAudioContext(stream,id){
+  console.log("Nabase: addAudioContext");
+  //音源の追加
+  const souce=AudioContext_nabe.createMediaStreamSource(stream);
+  //フィルターの作成
+  //パンナー
+  PannerMap[id]=new PannerNode(AudioContext_nabe,{
+    panningModel: "HRTF",
+    distanceModel: "linear",
+    refDistance: 1,
+    maxDistance: 100,
+    rolloffFactor: 1,
+    coneInnerAngle: 360,
+    coneOuterAngle: 0,
+    coneOuterGain: 0,
+  });
+  
+  //gain
+  const gain=AudioContext_nabe.createGain();
+   // 音声を再生
+   await souce.mediaStream.getTracks().forEach(track => {
+    if (track.kind === 'audio') {
+        track.enabled = true;
+    }
+});
+  //つなげる
+  souce.connect(PannerMap[id]).connect(gain).connect(AudioContext_nabe.destination);
+  // 音声再生を追加
+  const audioElement = new Audio();
+  audioElement.srcObject = stream;
+  await audioElement.play().catch(console.error);
+}
+
 function updatePannerNode(id, x, z) {
   if(PannerMap[id]!=undefined&&PannerMap[id]!=null){
-    PannerMap[id].positionX.setValueAtTime(x, audioContext.currentTime);
-    PannerMap[id].positionY.setValueAtTime(0, audioContext.currentTime);
-    PannerMap[id].positionZ.setValueAtTime(z, audioContext.currentTime);
+    PannerMap[id].positionX.setValueAtTime(x, AudioContext_nabe.currentTime);
+    PannerMap[id].positionY.setValueAtTime(0, AudioContext_nabe.currentTime);
+    PannerMap[id].positionZ.setValueAtTime(z, AudioContext_nabe.currentTime);
   }else{
     console.log("Nabase: pannerが見つかりません");
   }
 }
 function updateLisnerNode(pos_x,pos_z,ang_x,ang_z){
+  console.log("Nabase: x value:", pos_x);
+  console.log("Nabase: z value:", pos_z);
   if(Listener!=null&&Listener!=undefined){
-  Listener.positionX.setValueAtTime(pos_x, audioContext.currentTime);
-  Listener.positionY.setValueAtTime(0, audioContext.currentTime);
-  Listener.positionZ.setValueAtTime(pos_z, audioContext.currentTime);
-  Listener.forwardX.setValueAtTime(ang_x, audioContext.currentTime);
-  Listener.forwardY.setValueAtTime(0, audioContext.currentTime);
-  Listener.forwardZ.setValueAtTime(ang_z, audioContext.currentTime);
+  Listener.positionX.setValueAtTime(pos_x, AudioContext_nabe.currentTime);
+  Listener.positionY.setValueAtTime(0, AudioContext_nabe.currentTime);
+  Listener.positionZ.setValueAtTime(pos_z, AudioContext_nabe.currentTime);
+  Listener.forwardX.setValueAtTime(ang_x, AudioContext_nabe.currentTime);
+  Listener.forwardY.setValueAtTime(0, AudioContext_nabe.currentTime);
+  Listener.forwardZ.setValueAtTime(ang_z, AudioContext_nabe.currentTime);
   }else{
     console.log("Nabase: listenerが見つからない");
+    console.log(Listener);
   }
-}*/
+}
 //※リスナーを削除したりpannerを削除するのが必要
